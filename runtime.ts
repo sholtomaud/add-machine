@@ -1,30 +1,38 @@
 import { interpretRevenue } from "./llm/interpretation.js"
 import { verifyLLMNumbers } from "./engine/verify.js"
 
-const deterministic = {
-  impressions: 416666,
-  clicks: 12500,
-  conversions: 250,
-  revenue: 20000
-}
+async function interpretWithRetry(
+  deterministic: any,
+  vars: any,
+  maxRetries = 3
+) {
 
-const interpretation = await interpretRevenue(
-  deterministic,
-  vars
-)
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
 
-const valid = verifyLLMNumbers(
-  deterministic,
-  interpretation
-)
+    const result =
+      await interpretRevenue(deterministic, vars)
 
-if (!valid) {
+    const valid =
+      verifyLLMNumbers(deterministic, result)
+
+    if (valid) {
+
+      console.log(
+        `LLM interpretation validated (attempt ${attempt})`
+      )
+
+      return result
+
+    }
+
+    console.warn(
+      `Validation failed (attempt ${attempt})`
+    )
+
+  }
 
   throw new Error(
-    "LLM failed numeric grounding check"
+    "LLM failed numeric grounding after retries"
   )
 
 }
-
-console.log("Verified interpretation:")
-console.log(interpretation)
