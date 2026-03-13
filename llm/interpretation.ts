@@ -1,44 +1,57 @@
 import { callModel } from "./client.js"
+import type { InterpretedRevenue } from "./interpretation-schema.js"
 
-export interface InterpretationInput {
+export async function interpretRevenue(
+  deterministic: object,
+  campaignVars: object
+): Promise<InterpretedRevenue> {
 
-  campaign: object
-  revenue: object
-  stats: object
+  const systemPrompt = `
+You are a marketing analytics assistant.
 
+You MUST follow these rules:
+
+1. Reproduce ALL numeric values exactly as provided.
+2. Do NOT recompute numbers.
+3. Do NOT round numbers.
+4. Copy the numbers verbatim into the JSON output.
+
+Your response MUST be valid JSON.
+
+Output schema:
+
+{
+  "impressions": number,
+  "clicks": number,
+  "conversions": number,
+  "revenue": number,
+  "interpretation": string
 }
 
-export async function interpretResults(
-  input: InterpretationInput
-): Promise<string> {
+If the numbers you produce differ from the provided values,
+your answer will be rejected.
 
-  const prompt = `
-You are a marketing analytics expert.
-
-Interpret the results of a deterministic ad campaign model.
-
-Campaign variables:
-${JSON.stringify(input.campaign, null, 2)}
-
-Revenue forecast:
-${JSON.stringify(input.revenue, null, 2)}
-
-A/B test statistics:
-${JSON.stringify(input.stats, null, 2)}
-
-Tasks:
-
-1. Explain what these numbers mean.
-2. Interpret whether the campaign is profitable.
-3. Interpret whether the A/B test is statistically significant.
-4. Suggest strategic actions.
-
-Write a concise analysis.
+The purpose of this system is to ensure the language explanation
+is grounded in the deterministic results.
 `
 
-  return await callModel([
-    { role: "system", content: "You are a marketing analytics expert." },
-    { role: "user", content: prompt }
+  const userPrompt = `
+Campaign variables:
+
+${JSON.stringify(campaignVars, null, 2)}
+
+Deterministic revenue model output:
+
+${JSON.stringify(deterministic, null, 2)}
+
+Explain the meaning of these results.
+`
+
+  const response = await callModel([
+    { role: "system", content: systemPrompt },
+    { role: "user", content: userPrompt }
   ])
+
+  return JSON.parse(response)
 
 }
