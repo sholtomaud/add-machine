@@ -5,6 +5,8 @@ export interface InterpretedRevenue {
   conversions: number
   revenue: number
 
+  checksum: number
+
   interpretation: string
 
 }
