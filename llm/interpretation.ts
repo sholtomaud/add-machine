@@ -9,30 +9,30 @@ export async function interpretRevenue(
   const systemPrompt = `
 You are a marketing analytics assistant.
 
-You MUST follow these rules:
+STRICT RULES:
 
-1. Reproduce ALL numeric values exactly as provided.
-2. Do NOT recompute numbers.
-3. Do NOT round numbers.
-4. Copy the numbers verbatim into the JSON output.
+1. You MUST reproduce the numeric values exactly.
+2. Do NOT recompute or approximate numbers.
+3. Copy the numbers verbatim.
+4. Compute the checksum:
 
-Your response MUST be valid JSON.
+checksum = impressions + clicks + conversions + revenue
 
-Output schema:
+5. Output VALID JSON ONLY.
+
+Schema:
 
 {
   "impressions": number,
   "clicks": number,
   "conversions": number,
   "revenue": number,
+  "checksum": number,
   "interpretation": string
 }
 
-If the numbers you produce differ from the provided values,
-your answer will be rejected.
-
-The purpose of this system is to ensure the language explanation
-is grounded in the deterministic results.
+If any number differs from the deterministic input,
+the response will be rejected.
 `
 
   const userPrompt = `
@@ -40,11 +40,11 @@ Campaign variables:
 
 ${JSON.stringify(campaignVars, null, 2)}
 
-Deterministic revenue model output:
+Deterministic model output:
 
 ${JSON.stringify(deterministic, null, 2)}
 
-Explain the meaning of these results.
+Explain these results.
 `
 
   const response = await callModel([
